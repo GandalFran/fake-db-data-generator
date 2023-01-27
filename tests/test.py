@@ -19,7 +19,6 @@ def test_generation():
     format_type = 'sql'
 
     # check if exists file
-    os.mkdir(output_file)
     if os.path.exists(output_file):
         shutil.rmtree(output_file)
 
@@ -42,7 +41,6 @@ def test_command_cli():
     format_type = 'sql'
 
     # check if exists file
-    os.mkdir(output_file)
     if os.path.exists(output_file):
         shutil.rmtree(output_file)
 

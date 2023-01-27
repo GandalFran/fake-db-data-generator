@@ -1,27 +1,36 @@
 {
-    "schema":
-    {
-        "exampleTable":
-        {
-            "exampleField":
-            {
-                "type": "datetime",
-                "value":
-                {
-                    "start": "2020-01-01T10:00:00.000Z",
-                    "end": "2023-01-01T10:00:00.000Z",
-                    "range": null
-                },
-                "distribution":
-                {
-                    "type": "normal"
-                }
+    "schema":{
+        "pacientes":{
+            "apellido1":{
+                "type":"surname"
+            },
+            "municipio":{
+                "type":"municipios"
             }
         }
     },
-    "data_types":
-    {
-        "collections": null,
-        "generators": null
+    "data_types":{
+        "collections":{
+            "municipios":{
+                "pattern":".*municipio.*",
+                "values":[
+                    "Leon",
+                    "Zamora",
+                    "Salamanca",
+                    "Palencia",
+                    "Valladolid",
+                    "Avila",
+                    "Burgos",
+                    "Soria",
+                    "Segovia"
+                ]
+            }
+        },
+        "generators":{
+            "nss":{
+                "pattern":".*nss.*",
+                "generator":"[0-9]{10}"
+            }
+        }
     }
 }

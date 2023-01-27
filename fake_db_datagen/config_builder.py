@@ -52,7 +52,7 @@ class ConfigBuilder:
                 if not isinstance(user_value, dict):
                     current_value = user_value
                 else:
-                    current_value = self.__merge_global_type(
+                    current_value = self.__merge_dicts(
                         default=default_value, user=user_value
                     )
 
@@ -83,10 +83,10 @@ class ConfigBuilder:
 
         # build collections
 
-        for enum in dbml.enums:
+        for dbml_enum in dbml.enums:
 
-            collection_name = enum.name
-            collection_values = enum.value
+            collection_name = dbml_enum.name
+            collection_values = dbml_enum.value
 
             logger.debug(f'adding collection {collection_name} with {len(collection_values)} values.')
 
