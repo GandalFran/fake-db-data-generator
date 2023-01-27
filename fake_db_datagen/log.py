@@ -6,9 +6,7 @@
 
 import logging
 import logging.config
-from os import path
 from typing import Any
-
 
 LOGGER_NAME = 'fake-data-generator'
 LOGGING_CONFIG = {
@@ -65,7 +63,7 @@ def setup_logger() -> None:
 def serve_application_logger() -> Any:
     """Setups logger for application if not initializes, and servers the application logger.
 
-    Returns: 
+    Returns:
         :obj:`logging.logger` application logger
     """
 

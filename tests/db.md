@@ -20,9 +20,9 @@ Table pacientes {
   pasaporte varchar [unique]
   telefono varchar
   email varchar
-  direccion varchar 
-  municipio varchar 
-  provincia varchar 
+  direccion varchar
+  municipio varchar
+  provincia varchar
   codigo_postal varchar
   activo boolean [default:`TRUE`]
 }
@@ -43,11 +43,11 @@ Table campos_registro{
   id int [pk, increment, not null]
   registro int
   fecha timestamp [default: `now()`]
-  codigo varchar 
-  sistema_codificacion sistemas_de_codificacion 
+  codigo varchar
+  sistema_codificacion sistemas_de_codificacion
   dato varchar
-  unidades varchar 
-  flag estados_info 
+  unidades varchar
+  flag estados_info
 }
 
 Table tipos_registro {
@@ -154,7 +154,7 @@ Table estudios {
 Table datos_pandemias{
   id int [pk, increment, not null]
   fecha timestamp
-  dato int 
+  dato int
   tipo_dato tipo_dato_datos_pandemia
   tipo tipo_datos_pandemia
   modelo modelo_datos_pandemia

@@ -2,7 +2,7 @@
 
 Fake data generation tool with DBML.
 
-## Usage 
+## Usage
 1. Install package with `python -m pip install . --upgrade`.
 2. Prepare the configuration and DBML files.
 3. Generate the components with `fakedatagen -d data.dbml -c config.json -o output.sql -f sql`.

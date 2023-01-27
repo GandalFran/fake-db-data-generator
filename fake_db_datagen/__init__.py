@@ -4,7 +4,8 @@
 # Author: Francisco Pinto Santos (@GandalFran on GitHub)
 
 
+from .data_generation_pipeline import (DataGenerationPiepline,
+                                       DataGenerationPipelineFromFiles)
 from .log import serve_application_logger
-logger = serve_application_logger()
 
-from .data_generation_pipeline import DataGenerationPiepline, DataGenerationPipelineFromFiles
+logger = serve_application_logger()

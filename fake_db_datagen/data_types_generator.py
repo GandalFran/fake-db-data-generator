@@ -4,60 +4,58 @@
 # Author: Francisco Pinto Santos (@GandalFran on GitHub)
 
 
-import rstr
 import enum
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any, List
 
-from . import logger
-from .distribution import DistributionGenerator
+import numpy as np
+import rstr
+
+from .distribution import DistributionGenerator, DistributionType
 
 
 class DataType(enum.Enum):
     """Available data types.
     """
 
-    int_='int'
-    float_='float'
-    boolean_='bool'
-    datetime_='datetime'
-    
-    text_='text'
-    collection='collection'
-    
-    id_='id'
-    char_='char'
-    uuid_='uuid'
-    varchar_='varchar'
-    generable='generable'
+    int_ = 'int'
+    float_ = 'float'
+    boolean_ = 'bool'
+    datetime_ = 'datetime'
+
+    text_ = 'text'
+    collection = 'collection'
+
+    id_ = 'id'
+    char_ = 'char'
+    uuid_ = 'uuid'
+    varchar_ = 'varchar'
+    generable = 'generable'
 
     @classmethod
-    def from_str(cls
-        , str_: str
-    ) -> 'DataType':
+    def from_str(cls, str_: str
+                 ) -> 'DataType':
 
         str_ = str_.lower()
 
-        return None if str_ not in [e.value for e in cls] else cls[str_+'_']
+        return None if str_ not in [e.value for e in cls] else cls[str_ + '_']
 
     @classmethod
-    def is_base_type(cls
-        , type_: 'DataType'
-    ) -> bool:
+    def is_base_type(cls, type_: 'DataType'
+                     ) -> bool:
 
         return type_ in [cls.int_, cls.float_, cls.boolean_, cls.datetime_]
 
 
 class GeneratorType(enum.Enum):
 
-    base_type='base_type'
-    generable='generable'
-    collection='collection'
+    base_type = 'base_type'
+    generable = 'generable'
+    collection = 'collection'
 
     @classmethod
-    def from_str(cls
-        , str_: str
-    ) -> 'DistributionType':
+    def from_str(cls, str_: str
+                 ) -> 'DistributionType':
 
         str_ = str_.lower()
 
@@ -69,18 +67,7 @@ class GeneratorType(enum.Enum):
         """
 
         obj = {
-            DataType.int_: cls.base_type
-            , DataType.float_: cls.base_type
-            , DataType.boolean_: cls.base_type
-            , DataType.datetime_: cls.base_type
-
-            , DataType.text_: cls.collection
-            , DataType.collection: cls.collection
-
-            , DataType.char_: cls.generable
-            , DataType.varchar_: cls.generable
-            , DataType.uuid_: cls.generable
-            , DataType.id_: cls.generable
+            DataType.int_: cls.base_type, DataType.float_: cls.base_type, DataType.boolean_: cls.base_type, DataType.datetime_: cls.base_type, DataType.text_: cls.collection, DataType.collection: cls.collection, DataType.char_: cls.generable, DataType.varchar_: cls.generable, DataType.uuid_: cls.generable, DataType.id_: cls.generable
         }
 
         if data_type not in obj:
@@ -97,64 +84,50 @@ class DataTypeGenerator:
     Note: this class must not be instanced directly, the method `DataTypeGenerator:build` method must be used.
     """
 
+    def __init__(self, distribution_generator: DistributionGenerator = None) -> None:
+        self.distribution_generator = distribution_generator
+
     @classmethod
-    def build(self
-        , data_type: DataType
-        , start: Any = None
-        , end: Any = None
-        , generable_expression: str = None 
-        , collection_values: List[Any] = None
-        , distribution_generator: DistributionGenerator = None
-    ) -> 'DataTypeGenerator':
+    def build(self, data_type: DataType, start: Any = None, end: Any = None, generable_expression: str = None, collection_values: List[Any] = None, distribution_generator: DistributionGenerator = None
+              ) -> 'DataTypeGenerator':
         """Factory method for building different generator types.
         """
 
         # build default distribution generator
         if distribution_generator is None:
-            distribution_generator = DistributionGenerator.default() 
+            distribution_generator = DistributionGenerator.default()
 
         # build data type generator
         assigned_generator = GeneratorType.get_generator(data_type)
 
         if assigned_generator == GeneratorType.base_type:
             generator = BaseTypeDataTypeGenerator(
-                data_type=data_type
-                , start=start
-                , end=end
-                , distribution_generator=distribution_generator
+                data_type=data_type, start=start, end=end, distribution_generator=distribution_generator
             )
         elif assigned_generator == GeneratorType.collection:
             generator = GenerableDataTypeGenerator(
-                collection=collection_values
-                , distribution_generator=distribution_generator
+                collection=collection_values, distribution_generator=distribution_generator
             )
         elif assigned_generator == GeneratorType.generable:
             generator = CollectionDataTypeGenerator(
-                expression=generable_expression
-                , distribution_generator=distribution_generator
+                expression=generable_expression, distribution_generator=distribution_generator
             )
         else:
             raise ValueError(f'Unable to instance data generator. The assigned_generator {assigned_generator} has not an implemented instanciation.')
 
         return generator
 
-    def generate(self
-        , num_samples: int
-    ) -> List[Any]:
+    def generate(self, num_samples: int
+                 ) -> List[Any]:
         """Generates the data
         """
         raise Exception('This method must not be used in this class, first build a DataTypeGenerator with the DataTypeGenerator.build method.')
- 
+
 
 class BaseTypeDataTypeGenerator(DataTypeGenerator):
-    
-    def __init__(self
-        , data_type: DataType
-        , start: Any
-        , end: Any
-        , *args
-        , **kwargs
-    ) -> None:
+
+    def __init__(self, data_type: DataType, start: Any, end: Any, *args, **kwargs
+                 ) -> None:
         super.__init__(*args, **kwargs)
         self.end = end
         self.start = start
@@ -168,9 +141,7 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
 
         # build distribution values
         values = self.distribution_generator.generate(
-            min_value=start_value
-            , max_value=end_value
-            , num_samples=num_samples
+            min_value=start_value, max_value=end_value, num_samples=num_samples
         )
 
         # build values
@@ -186,9 +157,7 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
 
         # build distribution values
         values = self.distribution_generator.generate(
-            min_value=start_value
-            , max_value=end_value
-            , num_samples=num_samples)
+            min_value=start_value, max_value=end_value, num_samples=num_samples)
 
         # build values
         float_values = [float(value) for value in values]
@@ -203,9 +172,7 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
 
         # build distribution values
         values = self.distribution_generator.generate(
-            min_value=start_value
-            , max_value=end_value
-            , num_samples=num_samples
+            min_value=start_value, max_value=end_value, num_samples=num_samples
         )
 
         # build values
@@ -217,7 +184,6 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
     def _generate_datetimes(self, num_samples: int) -> List[datetime]:
 
         # load configuration
-        distribution = config.distribution
         end_datetime = datetime.fromiso(self.end)
         start_datetime = datetime.fromiso(self.start)
 
@@ -227,72 +193,58 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
 
         # build distribution values
         values = self.distribution_generator.generate(
-            min_value=0
-            , max_value=num_seconds
-            , num_samples=num_samples)
+            min_value=0, max_value=num_seconds, num_samples=num_samples)
 
         # build values
         fixed_values = [int(value) for value in values]
         delta_values = [datetime.timedelta(seconds=fixed_value) for fixed_value in fixed_values]
-        date_values = [(start_datetime + delta_value)  for delta_value in delta_values]
+        date_values = [(start_datetime + delta_value) for delta_value in delta_values]
 
         return date_values
 
     def generate(self, num_samples: int) -> None:
         """Generates the data
         """
-        
+
         if self.data_type == DataType.int_:
             values = self._generate_ints(
-                distribution_generator=distribution_generator
-                , num_samples=num_samples
+                num_samples=num_samples
             )
         elif self.data_type == DataType.float_:
             values = self._generate_floats(
-                distribution_generator=distribution_generator
-                , num_samples=num_samples
+                num_samples=num_samples
             )
         elif self.data_type == DataType.boolean_:
             values = self._generate_booleans(
-                distribution_generator=distribution_generator
-                , num_samples=num_samples
+                num_samples=num_samples
             )
         elif self.data_type == DataType.DATE:
             values = self._generate_datetimes(
-                distribution_generator=distribution_generator
-                , num_samples=num_samples
+                num_samples=num_samples
             )
         else:
-            raise ValueError(f'Unable to instance generator. The assigned_generator {assigned_generator} has not an implemented instanciation.')
+            raise ValueError(f'Unable to instance generator for not recognized base data type: "{self.data_type}".')
 
         return values
 
 
 class CollectionDataTypeGenerator(DataTypeGenerator):
-    
-    def __init__(self
-        , collection_values: List[Any]
-        , *args
-        , **kwargs
-    ) -> None:
+
+    def __init__(self, collection_values: List[Any], *args, **kwargs
+                 ) -> None:
         super.__init__(*args, **kwargs)
         self.collection_values = collection_values
 
-    def generate(self
-        
-        , num_samples: int
-    ) -> List[Any]:
+    def generate(self, num_samples: int
+                 ) -> List[Any]:
 
         # load configuration
         start_value = 0
         end_value = len(self.collection_values)
-        distribution = config.distribution
 
         # build distribution values
         values = self.distribution_generator.generate(
-            min_value=start_value
-            , max_value=end_value
-            , num_samples=num_samples)
+            min_value=start_value, max_value=end_value, num_samples=num_samples)
 
         # build values
         index_values = [int(value) for value in values]
@@ -303,20 +255,15 @@ class CollectionDataTypeGenerator(DataTypeGenerator):
 
 class GenerableDataTypeGenerator(DataTypeGenerator):
 
-    def __init__(self
-        , generable_expression: str
-        , *args
-        , **kwargs
-    ) -> None:
+    def __init__(self, generable_expression: str, *args, **kwargs
+                 ) -> None:
         super.__init__(*args, **kwargs)
         self.generable_expression = generable_expression
 
-    def generate(self
-        
-        , num_samples: int
-    ) -> List[Any]:
+    def generate(self, num_samples: int
+                 ) -> List[Any]:
 
         # build values
         generable_values = [rstr.xeger(self.generable_expression) for _ in num_samples]
- 
+
         return generable_values
