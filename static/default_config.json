@@ -1,56 +1,10 @@
-# Fake DB data generation
-
-Fake data generation tool with DBML.
-
-## Usage 
-1. Install package with `python -m pip install . --upgrade`.
-2. Prepare the configuration and DBML files.
-3. Generate the components with `fakedatagen -d data.dbml -c config.json -o output.sql -f sql`.
-
-## Configuration file
-
-Example of configuration file
-
-```json
-{
-    "schema":
-    {
-        "exampleTable":
-        {
-            "exampleField":
-            {
-                "type": "date",
-                "value":
-                {
-                    "start": "2020-01-01T10:00:00.000Z",
-                    "end": "2023-01-01T10:00:00.000Z",
-                    "range": null
-                },
-                "distribution":
-                {
-                    "type": "normal"
-                }
-            }
-        }
-    },
-    "data_types":
-    {
-        "collections": null,
-        "generators": null
-    }
-}
-```
-
-Default configuration file
-
-```json
 {
     "schema": null,
     "data_types":
     {
         "base_types":
         {
-            "date":
+            "datetime":
             {
                 "value":
                 {
@@ -58,20 +12,7 @@ Default configuration file
                     "end": "2023-01-01T10:00:00.000Z",
                     "range": null
                 },
-                "distribution":
-                {
-                    "type": "normal",
-                    "config": null
-                }
-            },
-            "time":
-            {
-                "value":
-                {
-                    "start": "00:00:00.000Z",
-                    "end": "23:59:59.999Z",
-                    "range": null
-                },
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -86,6 +27,7 @@ Default configuration file
                     "end": 10.0,
                     "range": null
                 },
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -100,6 +42,7 @@ Default configuration file
                     "end": 10,
                     "range": null
                 },
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -135,6 +78,7 @@ Default configuration file
                     "Theodore",
                     "Harper"
                 ],
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -167,6 +111,7 @@ Default configuration file
                     "Jackson",
                     "Martin"
                 ],
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -182,6 +127,7 @@ Default configuration file
                     "Address 2",
                     "Address 3"
                 ],
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -197,6 +143,7 @@ Default configuration file
                     "female",
                     "other"
                 ],
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -214,6 +161,7 @@ Default configuration file
                     "Nam malesuada nulla sit amet dui pretium fringilla quis vulputate ligula. Etiam porttitor massa sem, eu feugiat augue scelerisque in. Nulla fringilla ac quam sit amet hendrerit. Praesent nec massa convallis, venenatis turpis ac, blandit orci. Aenean a lorem sagittis, suscipit erat scelerisque, rutrum urna. Praesent et nulla in mauris rutrum dignissim a sed lacus. Etiam luctus turpis ac leo vestibulum consectetur. Integer sed justo sit amet libero porttitor blandit ac in lacus. Donec id nulla non dolor faucibus rutrum. Curabitur luctus pharetra ligula, sed vulputate ex luctus eget. Sed tristique convallis enim, nec ullamcorper dui vehicula eget. Donec ex turpis, scelerisque eu convallis efficitur, sagittis vel nisi. Praesent neque dolor, eleifend non porta a, varius vel massa.",
                     "Sed ligula velit, dictum id nibh vitae, cursus hendrerit massa. Proin lobortis erat orci, eu molestie urna mollis at. Pellentesque at sagittis velit, vel pellentesque lectus. Nam aliquam rutrum quam, quis molestie nisl iaculis quis. Vestibulum id pharetra risus, ac auctor leo. Nullam dignissim a neque at sagittis. Aenean suscipit ante in erat semper fermentum. Pellentesque vulputate sollicitudin sodales. Sed consequat porta felis ut rhoncus."
                 ],
+                "samples": 10,
                 "distribution":
                 {
                     "type": "normal",
@@ -227,44 +175,51 @@ Default configuration file
             "id":
             {
                 "pattern": "(.*id.*)",
+                "samples": 10,
                 "generator": "[0-9]{1-10}"
             },
             "uuid":
             {
                 "pattern": "(.*uuid.*)|(.*uid.*)",
+                "samples": 10,
                 "generator": "[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}"
             },
             "phone":
             {
                 "pattern": "(.*phone.*)|(.*movil.*)|(.*móvil.*)|(.*telefono.*)|(.*teléfono.*)",
+                "samples": 10,
                 "generator": "[\\+]?[(]?[0-9]{3}[)]?[-\\s\\.]?[0-9]{3}[-\\s\\.]?[0-9]{4,6}"
             },
             "email":
             {
                 "pattern": "(*.email.*)|(*.mail.*)|(*.correo.*)",
+                "samples": 10,
                 "generator": "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}."
             },
             "ip":
             {
                 "pattern": ".*ip.*",
+                "samples": 10,
                 "generator": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
             },
             "dni":
             {
                 "pattern": "*dni*",
+                "samples": 10,
                 "generator": "[0-9]{7}[A-Z]{1}"
             },
             "varchar":
             {
                 "pattern": "varchar",
+                "samples": 10,
                 "generator": "[a-zA-Z]{1-255}"
             },
             "char":
             {
                 "pattern": "char",
+                "samples": 10,
                 "generator": "[a-zA-Z]{1}"
             }
         }
     }
 }
-```
