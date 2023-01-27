@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from pydbml import PyDBML
 
 from . import logger
-from .data_types_generator import DataType, GeneratorType
+from .data_types_generator import DataType
 from .distribution import DistributionType
 
 
@@ -275,7 +275,7 @@ class ConfigBuilder:
             )
 
             if matching_collection is not None:
-                logger.debug(f'selected type for field {field_name}: {matching_collection}')
+                logger.debug(f'detected type for field {field_name}: {matching_collection}')
                 return
 
             matching_generable = self.__look_for_suitable_type(
@@ -283,7 +283,7 @@ class ConfigBuilder:
             )
 
             if matching_generable is not None:
-                logger.debug(f'selected type for field {field_name}: {matching_generable}')
+                logger.debug(f'detected type for field {field_name}: {matching_generable}')
                 return
 
             if matching_collection is None and matching_generable is None:
@@ -403,7 +403,7 @@ class ConfigBuilder:
                 except ConfigurationError as e:
                     raise e.build_from_inner(previous_path=['schema', table, field])
 
-    def __complete_base_type_config(self, field_type: DataType, current_field_config: Dict[str, Any], current_type_config: Dict[str, Any]
+    def __complete_base_type_config(self, field_type: str, current_field_config: Dict[str, Any], current_type_config: Dict[str, Any]
                                     ) -> Dict[str, Any]:
 
         # get value (with start and end)
@@ -421,7 +421,7 @@ class ConfigBuilder:
 
         # set values to configuration
         field_config = {
-            'type': field_type, 'value': field_value, 'samples': field_samples, 'distribution': field_distribution
+            'type': DataType.from_str(field_type), 'value': field_value, 'samples': field_samples, 'distribution': field_distribution
         }
 
         return field_config
@@ -430,7 +430,7 @@ class ConfigBuilder:
                                      ) -> Dict[str, Any]:
 
         # get values
-        field_values = current_field_config.get('values')
+        field_values = current_field_config.get('values') if current_field_config is not None else None
         field_values = current_type_config.get('values') if field_values is None else field_values
 
         # get num_samples
@@ -438,13 +438,13 @@ class ConfigBuilder:
         field_samples = current_type_config.get('samples') if field_samples is None else field_samples
 
         # get distribution
-        field_distribution = current_field_config.get('distribution')
+        field_distribution = current_field_config.get('distribution') if current_field_config is not None else None
         field_distribution = current_type_config.get('distribution') if field_distribution is None and current_type_config is not None else field_distribution
         field_distribution = {'type': 'normal', 'config': None} if field_distribution is None else field_distribution
 
         # set values to configuration
         field_config = {
-            'type': GeneratorType.collection, 'values': field_values, 'samples': field_samples, 'distribution': field_distribution
+            'type': DataType.collection, 'values': field_values, 'samples': field_samples, 'distribution': field_distribution
         }
 
         return field_config
@@ -453,7 +453,7 @@ class ConfigBuilder:
                                     ) -> Dict[str, Any]:
 
         # get generable
-        field_generable = current_field_config.get('generable')
+        field_generable = current_field_config.get('generable') if current_field_config is not None else None
         field_generable = current_type_config.get('generable') if field_generable is None else field_generable
 
         # get num_samples
@@ -462,24 +462,21 @@ class ConfigBuilder:
 
         # set values to configuration
         field_config = {
-            'type': GeneratorType.generable, 'generable': field_generable, 'samples': field_samples, 'distribution': None
+            'type': DataType.generable, 'generable': field_generable, 'samples': field_samples, 'distribution': None
         }
 
         return field_config
 
     def __build_field_config(self, field_type: str, field_name: str, current_field_config: Dict[str, Any], base_types_config: Dict[str, Any], collection_types_config: Dict[str, Any], generable_types_config: Dict[str, Any]) -> Dict[str, str]:
 
-        # format type
-        field_type = DataType.from_str(field_type)
-
         # generate different following the type
 
-        if DataType.is_base_type(field_type):
+        if DataType.is_base_type(DataType.from_str(field_type)):
 
             logger.debug(f'set field {field_name} as base type')
 
             # get global config for type
-            current_type_config = base_types_config.get(field_type.value)
+            current_type_config = base_types_config.get(field_type)
 
             # build current field config
             field_config = self.__complete_base_type_config(
@@ -490,22 +487,22 @@ class ConfigBuilder:
 
             logger.debug('set field as collection')
 
-            curent_type_config = collection_types_config.get(field_type)
+            current_type_config = collection_types_config.get(field_type)
 
             # build current field config
             field_config = self.__complete_collection_config(
-                current_field_config=current_field_config, curent_type_config=curent_type_config
+                current_field_config=current_field_config, current_type_config=current_type_config
             )
 
         elif field_type in generable_types_config or (current_field_config is not None and 'generator' in current_field_config):
 
             logger.debug('set field as generable')
 
-            curent_type_config = generable_types_config.get(field_type)
+            current_type_config = generable_types_config.get(field_type)
 
             # build current field config
             field_config = self.__complete_generable_config(
-                current_field_config=current_field_config, curent_type_config=curent_type_config
+                current_field_config=current_field_config, current_type_config=current_type_config
             )
 
         else:
@@ -514,10 +511,6 @@ class ConfigBuilder:
 
             matching_collection = self.__look_for_suitable_type(
                 field_name=field_name, field_type=field_type, type_configs=collection_types_config
-            )
-
-            matching_generable = self.__look_for_suitable_type(
-                field_name=field_name, field_type=field_type, type_configs=generable_types_config
             )
 
             if matching_collection is not None:
@@ -530,23 +523,28 @@ class ConfigBuilder:
                 field_config = self.__complete_collection_config(
                     current_field_config=current_field_config, current_type_config=current_type_config
                 )
+            else:
 
-            if matching_generable is not None and field_config is None:
-
-                logger.debug(f'find suitable generable matching the name of field {field_name}: {matching_generable}')
-
-                current_type_config = generable_types_config.get(matching_generable)
-
-                # build current field config
-                field_config = self.__complete_generable_config(
-                    current_field_config=current_field_config, current_type_config=current_type_config
+                matching_generable = self.__look_for_suitable_type(
+                    field_name=field_name, field_type=field_type, type_configs=generable_types_config
                 )
 
-            if field_config is None:
+                if matching_generable is not None:
 
-                logger.warning(f'unable to find suitable type for the field {field_name}. Finishing generation process.')
+                    logger.debug(f'find suitable generable matching the name of field {field_name}: {matching_generable}')
 
-                raise ValueError(f'Unable to find suitable type for field {field_name}. Please, check the configuration and set a suitable configuration, collection or generable information to continue with generation.')
+                    current_type_config = generable_types_config.get(matching_generable)
+
+                    # build current field config
+                    field_config = self.__complete_generable_config(
+                        current_field_config=current_field_config, current_type_config=current_type_config
+                    )
+
+                else:
+
+                    logger.warning(f'unable to find suitable type for the field {field_name} of type {field_type}. Finishing generation process.')
+
+                    raise ValueError(f'Unable to find suitable type for field {field_name}. Please, check the configuration and set a suitable configuration, collection or generable information to continue with generation.')
 
         # add name
         field_config['name'] = field_name

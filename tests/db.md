@@ -11,7 +11,7 @@ Table pacientes {
   nombre varchar
   apellido1 varchar
   apellido2 varchar
-  fecha_nacimiento timestamp [default: `now()`]
+  fecha_nacimiento datetime [default: `now()`]
   sexo tipo_sexo
   tarjeta_sanitaria varchar [unique]
   nhc varchar [unique]
@@ -31,8 +31,8 @@ Table pacientes {
 Table registros{
   id int [pk, increment, not null]
   paciente int
-  fecha_dato timestamp [default: `now()`]
-  fecha_recepcion timestamp [default: `now()`]
+  fecha_dato datetime [default: `now()`]
+  fecha_recepcion datetime [default: `now()`]
   tipo_registro int
   estado estados_info
   visto boolean
@@ -42,7 +42,7 @@ Table registros{
 Table campos_registro{
   id int [pk, increment, not null]
   registro int
-  fecha timestamp [default: `now()`]
+  fecha datetime [default: `now()`]
   codigo varchar
   sistema_codificacion sistemas_de_codificacion
   dato varchar
@@ -63,7 +63,7 @@ Table usuarios{
   foto_url varchar
   password varchar [not null]
   activo boolean [default:`TRUE`] // Note: if the employee is fired, the active flat is set to false
-  fecha_creacion timestamp [default: `now()`]
+  fecha_creacion datetime [default: `now()`]
   nombre varchar
   apellido1 varchar
   apellido2 varchar
@@ -77,15 +77,15 @@ Table seguimiento{
   id int [pk, increment, not null]
   usuario int
   paciente int
-  fecha_inicio timestamp [default: `now()`]
-  fecha_fin timestamp [default: `now()`]
+  fecha_inicio datetime [default: `now()`]
+  fecha_fin datetime [default: `now()`]
 }
 
 
 Table formulario {
   id int [pk, increment, not null]
   paciente int [not null]
-  fecha timestamp [default: `now()`]
+  fecha datetime [default: `now()`]
   vive_solo varchar
   posibilidad_provisiones varchar
   condiciones_empleo varchar
@@ -147,13 +147,13 @@ Table estudios {
   usuario int [not null]
   paciente int [not null]
   motivo varchar
-  fecha timestamp
+  fecha datetime
   estado estado_estudio
 }
 
 Table datos_pandemias{
   id int [pk, increment, not null]
-  fecha timestamp
+  fecha datetime
   dato int
   tipo_dato tipo_dato_datos_pandemia
   tipo tipo_datos_pandemia

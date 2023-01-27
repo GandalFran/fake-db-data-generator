@@ -218,7 +218,7 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
             values = self._generate_booleans(
                 num_samples=num_samples
             )
-        elif self.data_type == DataType.DATE:
+        elif self.data_type == DataType.datetime_:
             values = self._generate_datetimes(
                 num_samples=num_samples
             )
