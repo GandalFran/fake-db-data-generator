@@ -6,6 +6,9 @@
             },
             "municipio":{
                 "type":"municipios"
+            },
+            "nss":{
+                "type":"nss"
             }
         }
     },
@@ -26,7 +29,7 @@
                 ]
             }
         },
-        "generators":{
+        "generables":{
             "nss":{
                 "pattern":".*nss.*",
                 "generator":"[0-9]{10}"

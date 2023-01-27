@@ -16,7 +16,7 @@ from .distribution import DistributionType
 
 class ConfigurationError(ValueError):
 
-    def __init__(self, config_path: List[str], error: str) -> None:
+    def __init__(self, config_path: List[str] = None, error: str = None) -> None:
 
         if config_path is None:
             config_path = []
@@ -41,13 +41,19 @@ class ConfigBuilder:
         """
 
         new_dict = {}
-        for k in default:
+        keywords = list(set(list(default.keys()) + list(user.keys())))
 
-            user_value = default.get(k)
+        for k in keywords:
+
+            user_value = user.get(k)
             default_value = default.get(k)
 
-            if user_value is None:
+            if default_value is None:
+                current_value = user_value
+            elif user_value is None:
                 current_value = default_value
+            elif default_value is None and user_value is None:
+                current_value = None
             else:
                 if not isinstance(user_value, dict):
                     current_value = user_value
@@ -58,11 +64,7 @@ class ConfigBuilder:
 
             new_dict[k] = current_value
 
-        data_not_in_default = {k: v for k, v in user.items() if k not in default}
-
-        data = {**new_dict, **data_not_in_default}
-
-        return data
+        return new_dict
 
     def _build_collections_from_enums(self, config: Dict[str, str], dbml: PyDBML
                                       ) -> None:
@@ -86,29 +88,35 @@ class ConfigBuilder:
         for dbml_enum in dbml.enums:
 
             collection_name = dbml_enum.name
-            collection_values = dbml_enum.value
+            collection_values = [item.name for item in dbml_enum.items]
 
             logger.debug(f'adding collection {collection_name} with {len(collection_values)} values.')
 
             collection_obj = {
-                'pattern': collection_name, 'values': collection_values, 'distribution': {'type': 'normal', 'config': None}
+                'pattern': collection_name, 'values': collection_values, 'samples': 10, 'distribution': {'type': 'normal', 'config': None}
             }
 
-            config['data_types']['collections'].append(collection_obj)
+            config['data_types']['collections'][collection_name] = collection_obj
 
-    def __look_for_suitable_type(self, field_name: str, type_configs: Dict[str, str]
+    def __look_for_suitable_type(self, field_name: str, field_type: str, type_configs: Dict[str, str]
                                  ) -> Optional[str]:
 
-        for type_, type_config in type_configs:
+        for type_, type_config in type_configs.items():
 
-            logger.debug(f'checking type {type_}')
+            pattern = type_config.get('pattern')
+            compiled_pattern = re.compile(pattern)
 
-            if re.match(type_config['pattern'], field_name):
+            # logger.debug(f'looking type suitable for field {field_name} of type {field_type}: checking type {type_} with pattern {pattern}')
+
+            if field_name is not None and (compiled_pattern.match(field_name) or field_name == type_):
+                return type_
+
+            if field_type is not None and (compiled_pattern.match(field_type) or field_type == type_):
                 return type_
 
         return None
 
-    def __check_base_type_consistency(self, type_config: Dict[str, Any], samples_optional: bool = False) -> None:
+    def __check_base_type_consistency(self, type_config: Dict[str, Any], type_: str = None, samples_optional: bool = False) -> None:
 
         # check value
         value = type_config.get('value')
@@ -130,20 +138,22 @@ class ConfigBuilder:
         distribution = type_config.get('distribution')
 
         if distribution is None:
-            raise ConfigurationError(error='Missing the field "distribution".')
+            logger.warning('No distribution specified.')
+        else:
 
-        distribution_type = distribution.get('type')
-        formatted_distribution_type = DistributionType.from_str(distribution_type)
+            distribution_type = distribution.get('type')
+            formatted_distribution_type = DistributionType.from_str(distribution_type)
 
-        if distribution_type is None or formatted_distribution_type is None:
-            raise ConfigurationError(config_path=['distribution'], error=f'Providen unknown distribution {distribution_type}.')
+            if distribution_type is None or formatted_distribution_type is None:
+                raise ConfigurationError(config_path=['distribution'], error=f'Providen unknown distribution {distribution_type}.')
 
         # check type
 
-        type_ = distribution.get('type')
+        if type_ is None:
+            type_ = type_config.get('type')
 
         if type_ is None:
-            raise ConfigurationError('Missing "type".')
+            raise ConfigurationError(error='Missing "type".')
 
         formatted_type = DataType.from_str(type_)
 
@@ -152,10 +162,10 @@ class ConfigBuilder:
 
         # check samples
 
-        num_samples = distribution.get('samples')
+        num_samples = type_config.get('samples')
 
-        if num_samples is None and not samples_optional:
-            raise ConfigurationError('Missing "samples".')
+        if num_samples is None:
+            logger.warning('No samples specified.')
 
     def __check_collection_type_consistency(self, type_config: Dict[str, Any], samples_optional: bool = False
                                             ) -> None:
@@ -165,32 +175,38 @@ class ConfigBuilder:
         if pattern is None or not pattern:
             raise ConfigurationError(error='Missing field "pattern".')
 
+        try:
+            _ = re.compile(pattern)
+        except:
+            raise ConfigurationError(config_path=['pattern'], error=f'The pattern "{pattern}" is an invalid regex.')
+
         # check values
 
         values = type_config.get('values')
 
         if values is None or not values:
-            raise ConfigurationError('Missing "values", it be a not empty array.')
+            raise ConfigurationError(error='Missing "values", it be a not empty array.')
 
         # check distribution
 
         distribution = type_config.get('distribution')
 
         if distribution is None:
-            raise ConfigurationError(error='Missing the field "distribution".')
+            logger.warning('No distribution specified.')
+        else:
 
-        distribution_type = distribution.get('type')
-        formatted_distribution_type = DistributionType.from_str(distribution_type)
+            distribution_type = distribution.get('type')
+            formatted_distribution_type = DistributionType.from_str(distribution_type)
 
-        if distribution_type is None or formatted_distribution_type is None:
-            raise ConfigurationError(config_path=['distribution'], error=f'Providen unknown distribution {distribution_type}.')
+            if distribution_type is None or formatted_distribution_type is None:
+                raise ConfigurationError(config_path=['distribution'], error=f'Providen unknown distribution {distribution_type}.')
 
         # check samples
 
-        num_samples = distribution.get('samples')
+        num_samples = type_config.get('samples')
 
-        if num_samples is None and not samples_optional:
-            raise ConfigurationError('Missing "samples".')
+        if num_samples is None:
+            logger.warning('No samples specified.')
 
     def __check_generable_type_consistency(self, type_config: Dict[str, Any], samples_optional: bool = False
                                            ) -> None:
@@ -202,19 +218,17 @@ class ConfigBuilder:
         if pattern is None or not pattern:
             raise ConfigurationError(error='Missing field "pattern".')
 
+        try:
+            _ = re.compile(pattern)
+        except:
+            raise ConfigurationError(config_path=['pattern'], error=f'The pattern "{pattern}" is an invalid regex.')
+
         # check generator
 
         generator = type_config.get('generator')
 
         if generator is None:
-            raise ConfigurationError('Missing "generator", it must be a regular expression for generating.')
-
-        # check samples
-
-        num_samples = type_config.get('samples')
-
-        if num_samples is None and not samples_optional:
-            raise ConfigurationError('Missing "samples".')
+            raise ConfigurationError(error='Missing "generator", it must be a regular expression for generating.')
 
         # check distribution
 
@@ -223,11 +237,17 @@ class ConfigBuilder:
         if distribution is not None:
             logger.warning('Located distribution into a generator object. This will be ignored due to the generable types data generation.')
 
-    def __check_field_consistency(self, field_configuration: Dict[str, Any], collection_types_config: Dict[str, Dict[str, Any]], generable_types_config: Dict[str, Dict[str, Any]]) -> None:
+        # check samples
+
+        num_samples = type_config.get('samples')
+
+        if num_samples is None:
+            logger.warning('No samples specified.')
+
+    def __check_field_consistency(self, field_name: str, field_configuration: Dict[str, Any], collection_types_config: Dict[str, Dict[str, Any]], generable_types_config: Dict[str, Dict[str, Any]]) -> None:
 
         # retrieve type
         type_ = field_configuration.get('type')
-        name = field_configuration.get('name')
 
         if type_ is None or not type_:
             raise ConfigurationError(error='Missing field "type".')
@@ -235,30 +255,36 @@ class ConfigBuilder:
         if DataType.is_base_type(type_):
 
             self.__check_base_type_consistency(
-                type_config=field_configuration, samples_optional=True
+                type_config=field_configuration
             )
 
         elif type_ == 'collection':
 
             self.__check_collection_type_consistency(
-                type_config=field_configuration, samples_optional=True
+                type_config=field_configuration
             )
 
         elif type_ == 'generable':
 
             self.__check_generable_type_consistency(
-                type_config=field_configuration, samples_optional=True
+                type_config=field_configuration
             )
-
         else:
-
             matching_collection = self.__look_for_suitable_type(
-                field_name=name, type_configs=collection_types_config
+                field_name=field_name, field_type=type_, type_configs=collection_types_config
             )
+
+            if matching_collection is not None:
+                logger.debug(f'selected type for field {field_name}: {matching_collection}')
+                return
 
             matching_generable = self.__look_for_suitable_type(
-                field_name=name, type_configs=generable_types_config
+                field_name=field_name, field_type=type_, type_configs=generable_types_config
             )
+
+            if matching_generable is not None:
+                logger.debug(f'selected type for field {field_name}: {matching_generable}')
+                return
 
             if matching_collection is None and matching_generable is None:
                 raise ConfigurationError(error=f'The given type {type_} is not in the recognized into available types.')
@@ -284,27 +310,31 @@ class ConfigBuilder:
 
         # check global configuration base types
 
-        logger.debug('checking configuration base types')
+        logger.debug('checking base types configuration')
 
-        for type_name, type_config in base_types_config:
+        for type_name, type_config in base_types_config.items():
+
+            logger.debug(f'checking base types configuration: {type_name}')
 
             try:
                 self.__check_base_type_consistency(
-                    type_config=type_config
+                    type_config=type_config, type_=type_name
                 )
             except ConfigurationError as e:
                 raise e.build_from_inner(previous_path=['data_types', 'base_types', type_name])
 
         # check collections config
 
-        logger.debug('checking configuration collections')
+        logger.debug('checking collections configuration')
 
         collection_types_config = data_types.get('collections')
 
         if collection_types_config is None:
             raise ConfigurationError(config_path=['data_types'], error='Missing the field "collections".')
 
-        for type_name, type_config in collection_types_config:
+        for type_name, type_config in collection_types_config.items():
+
+            logger.debug(f'checking collections types configuration: {type_name}')
 
             try:
                 self.__check_collection_type_consistency(
@@ -315,14 +345,16 @@ class ConfigBuilder:
 
         # check generable config
 
-        logger.debug('checking configuration generables')
+        logger.debug('checking generables types configuration')
 
         generable_types_config = data_types.get('generables')
 
         if generable_types_config is None:
             raise ConfigurationError(config_path=['data_types'], error='Missing the field "generables".')
 
-        for type_name, type_config in generable_types_config:
+        for type_name, type_config in generable_types_config.items():
+
+            logger.debug(f'checking generables configuration: {type_name}')
 
             try:
                 self.__check_generable_type_consistency(
@@ -333,13 +365,18 @@ class ConfigBuilder:
 
         # check that tables and fields ar set up correctly and the configuration of each field is setup correctly
 
-        tables = config.get('schema')
+        logger.debug('checking tables configuration')
 
+        tables = config.get('schema')
         tables_and_columns = {table.name: [column.name for column in table.columns] for table in dbml.tables}
 
-        logger.debug('checking configuration tables')
+        if not tables:
+            logger.debug('checking tables configuration: no tables configuration providen by user')
+            return
 
-        for table in tables:
+        for table, table_configuration in tables.items():
+
+            logger.debug(f'checking tables configuration: {table}')
 
             # check table
 
@@ -348,7 +385,11 @@ class ConfigBuilder:
 
             # check each field
 
-            for field, field_configuration in tables_and_columns:
+            logger.debug(f'checking tables configuration: {table}: checking fields')
+
+            for field, field_configuration in table_configuration.items():
+
+                logger.debug(f'checking tables configuration: {table}: checking fields: {field}')
 
                 if field not in tables_and_columns[table]:
                     raise ConfigurationError(config_path=['schema', table, field], error=f'The table {table} has not the field {field} registered in the DBML schema.')
@@ -357,12 +398,12 @@ class ConfigBuilder:
 
                 try:
                     self.__check_field_consistency(
-                        field_configuration=field_configuration, collection_types_config=collection_types_config, generable_types_config=generable_types_config
+                        field_name=field, field_configuration=field_configuration, collection_types_config=collection_types_config, generable_types_config=generable_types_config
                     )
                 except ConfigurationError as e:
                     raise e.build_from_inner(previous_path=['schema', table, field])
 
-    def __complete_base_type_config(self, field_type: str, current_field_config: Dict[str, Any], current_type_config: Dict[str, Any]
+    def __complete_base_type_config(self, field_type: DataType, current_field_config: Dict[str, Any], current_type_config: Dict[str, Any]
                                     ) -> Dict[str, Any]:
 
         # get value (with start and end)
@@ -380,7 +421,7 @@ class ConfigBuilder:
 
         # set values to configuration
         field_config = {
-            'type': DataType.from_str(field_type), 'value': field_value, 'samples': field_samples, 'distribution': field_distribution
+            'type': field_type, 'value': field_value, 'samples': field_samples, 'distribution': field_distribution
         }
 
         return field_config
@@ -428,23 +469,24 @@ class ConfigBuilder:
 
     def __build_field_config(self, field_type: str, field_name: str, current_field_config: Dict[str, Any], base_types_config: Dict[str, Any], collection_types_config: Dict[str, Any], generable_types_config: Dict[str, Any]) -> Dict[str, str]:
 
-        field_config = None
+        # format type
+        field_type = DataType.from_str(field_type)
 
         # generate different following the type
 
-        if GeneratorType.is_base_type(field_type):
+        if DataType.is_base_type(field_type):
 
-            logger.debug('set field as base type')
+            logger.debug(f'set field {field_name} as base type')
 
             # get global config for type
-            current_type_config = base_types_config.get(field_type)
+            current_type_config = base_types_config.get(field_type.value)
 
             # build current field config
             field_config = self.__complete_base_type_config(
                 field_type=field_type, current_field_config=current_field_config, current_type_config=current_type_config
             )
 
-        elif field_type in collection_types_config or 'values' in current_field_config:
+        elif field_type in collection_types_config or (current_field_config is not None and 'values' in current_field_config):
 
             logger.debug('set field as collection')
 
@@ -455,7 +497,7 @@ class ConfigBuilder:
                 current_field_config=current_field_config, curent_type_config=curent_type_config
             )
 
-        elif field_type in generable_types_config:
+        elif field_type in generable_types_config or (current_field_config is not None and 'generator' in current_field_config):
 
             logger.debug('set field as generable')
 
@@ -471,11 +513,11 @@ class ConfigBuilder:
             logger.debug('set field as unknown. Looking for matching collections and generables.')
 
             matching_collection = self.__look_for_suitable_type(
-                field_name=field_name, type_configs=collection_types_config
+                field_name=field_name, field_type=field_type, type_configs=collection_types_config
             )
 
             matching_generable = self.__look_for_suitable_type(
-                field_name=field_name, type_configs=generable_types_config
+                field_name=field_name, field_type=field_type, type_configs=generable_types_config
             )
 
             if matching_collection is not None:
@@ -524,23 +566,28 @@ class ConfigBuilder:
 
         for table in dbml.tables:
 
-            logger.debug(f'processing table {table}')
-
             # set initial values
             table_name = table.name
             current_table_config = {}
 
+            logger.debug(f'processing table {table_name}')
+
             # retrieve user config
-            user_table_config = tables_config.get(table)
+            user_table_config = tables_config.get(table_name)
 
             # generate config for each field
-            for field in table.attributes:
-
-                logger.debug(f'processing field {table}.{field}')
+            for field in table.columns:
 
                 # retrieve base values
                 field_name = field.name
-                field_type = GeneratorType.from_str(field.type)
+                field_type = field.type
+
+                logger.debug(f'processing field {table_name}.{field_name}')
+
+                # format type
+                field_type = field_type.name if not isinstance(field_type, str) else field_type
+
+                # get config
                 current_field_config = user_table_config.get(field_name) if user_table_config is not None else None
 
                 field_config = self.__build_field_config(
@@ -548,7 +595,7 @@ class ConfigBuilder:
                 )
 
                 # aggretate result to table config
-                current_table_config[field] = field_config
+                current_table_config[field_name] = field_config
 
             # aggregate result to tables config
             final_config[table_name] = current_table_config
@@ -560,26 +607,26 @@ class ConfigBuilder:
 
         # build merged config
         logger.debug('mering user and default config')
-        mered_config = self.__merge_dicts(
+        merged_config = self.__merge_dicts(
             default=default_config, user=user_config
         )
 
         # add dbml enumerations as collections
         logger.debug('add DBML enumerations as collection types')
         self._build_collections_from_enums(
-            config=mered_config, dbml=dbml
+            config=merged_config, dbml=dbml
         )
 
         # check configuration consistency
         logger.debug('checking generated configuration consistency')
         self._check_config_consistency(
-            config=mered_config, dbml=dbml
+            config=merged_config, dbml=dbml
         )
 
         # populate configuration object with all tables and columns
         logger.debug('performing configuration object population with config and DBML')
         populated_config = self._populate_config(
-            config=mered_config, dbml=dbml
+            config=merged_config, dbml=dbml
         )
 
         return populated_config

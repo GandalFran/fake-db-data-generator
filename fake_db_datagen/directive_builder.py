@@ -185,17 +185,94 @@ class DirectiveBuilder:
     def _calculate_dependencies(self, dbml: PyDBML
                                 ) -> Dict[str, List[str]]:
 
+        # extract all dependencies
+
         dependencies = {}
 
         for table in dbml.tables:
 
-            table_refs = {ref.current_table_field: {
-                'table': ref.referenced_table, 'field': ref.referenced_table_field
-            } for ref in table.refs}
+            for ref in table.get_refs():
 
-            if table_refs:
+                ref_type = ref.type
 
-                dependencies[table] = table_refs
+                # note: table1 ref_type table2
+
+                if ref_type == '>':
+
+                    referenced_table = ref.table2
+                    referencing_table = ref.table1
+
+                    referenced_columns = ref.col2
+                    referencing_columns = ref.col1
+
+                elif ref_type == '<':
+
+                    referenced_table = ref.table1
+                    referencing_table = ref.table2
+
+                    referenced_columns = ref.col1
+                    referencing_columns = ref.col2
+
+                else:  # if is one to one, the main one is understood like the first one
+
+                    referenced_table = ref.table2
+                    referencing_table = ref.table1
+
+                    referenced_columns = ref.col2
+                    referencing_columns = ref.col1
+
+                # get names
+                referenced_table = referenced_table.name
+                referencing_table = referencing_table.name
+                referenced_columns = [c.name for c in referenced_columns]
+                referencing_columns = [c.name for c in referencing_columns]
+
+                # get referenced_colum
+                referenced_column = referencing_columns[0]
+
+                if len(referencing_columns) > 0:
+                    raise Exception('Multiple referencing columns. Generation error')
+
+                # register references
+
+                if referencing_table not in dependencies:
+
+                    dependencies[referencing_table] = {}
+
+                for referencing_column in referencing_columns:
+                    dependencies[referencing_table][referencing_column] = {
+                        'table': referenced_table, 'column': referenced_column
+                    }
+
+        # clean duplicated references
+
+        for referencing_table, table_references in dependencies.items():
+
+            for referencing_column, table_reference in table_references:
+
+                referenced_table = table_reference.get('table')
+                referenced_column = table_reference.get('column')
+
+                referenced_table_references = dependencies.get(referenced_table)
+
+                if referenced_table_references is None:
+                    continue
+
+                referenteced_column_references = referenced_table_references.get(referenced_column)
+
+                if referenteced_column_references is None:
+                    continue
+
+                dup_tab = referenteced_column_references.get('table')
+                dup_col = referenteced_column_references.get('column')
+
+                if referencing_table == dup_tab and referencing_column == dup_col:
+
+                    del referenced_table_references[referenced_column]
+
+        # clean empty referenced tables
+
+        dependencies = {table: references for table, references in dependencies.items() if references}
 
         return dependencies
 
