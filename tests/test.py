@@ -47,7 +47,7 @@ def test_command_cli():
     assert(os.path.exists(output_file))
 
     # delete
-    os.remove(output_file)
+    # os.remove(output_file)
 
 
 if __name__ == '__main__':

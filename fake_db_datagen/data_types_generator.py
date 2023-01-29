@@ -265,5 +265,7 @@ class GenerableDataTypeGenerator(DataTypeGenerator):
 
         # build values
         generable_values = [rstr.xeger(self.generable_expression) for _ in range(num_samples)]
+        # print(self.generable_expression)
+        # print(generable_values)
 
         return generable_values

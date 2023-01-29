@@ -1,7 +1,13 @@
 {
     "schema":{
         "pacientes":{
+            "nombre": {
+                "type": "name"
+            },
             "apellido1":{
+                "type":"surname"
+            },
+            "apellido2":{
                 "type":"surname"
             },
             "municipio":{
@@ -9,6 +15,9 @@
             },
             "nss":{
                 "type":"nss"
+            },
+            "tarjeta_sanitaria": {
+                "type": "uuid"
             }
         }
     },

@@ -138,7 +138,7 @@ class GeneratorDirective:
 
             # generate common fields
 
-            logger.debug(f'generating ({num_samples}) of common fields')
+            logger.debug(f'generating {num_samples} samples of common fields')
 
             value_entries = self.__generate_value_entries(num_samples=num_samples)
 
@@ -162,9 +162,11 @@ class GeneratorDirective:
 
         logger.debug('formatting generated dependencies.')
 
+        all_fields = list(self.fields) + list(self.dependencies)
+
         self._generated_data = {
             field: [entry[field] for entry in entries]
-            for field in entries[0].keys()
+            for field in all_fields
         }
 
     def fetch(self) -> Dict[str, List[Any]]:
@@ -496,6 +498,10 @@ class DirectiveBuilder:
         self._calculate_sequence(
             directives=directives, dependencies=dependencies
         )
+
+        # sorty by table sequency
+
+        dependencies = list(sorted(directives, key=lambda x: x.index))
 
         import pprint
         pprint.pprint(dependencies)

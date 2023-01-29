@@ -61,11 +61,18 @@ class DistributionGenerator:
     def scale(self, origin_values: List[float], dest_start: float, dest_end: List[float]
               ) -> float:
 
-        origin_start = np.min(origin_values)
         origin_end = np.max(origin_values)
+        origin_start = np.min(origin_values)
+
+        # scale
 
         proportion = (dest_end - dest_start) / (origin_end - origin_start)
         dest_values = [dest_start + (origin_value * proportion) for origin_value in origin_values]
+
+        # fix
+
+        dest_values = [(dest_value if dest_value <= dest_end else dest_end) for dest_value in dest_values]
+        dest_values = [(dest_value if dest_value >= dest_start else dest_start) for dest_value in dest_values]
 
         return dest_values
 

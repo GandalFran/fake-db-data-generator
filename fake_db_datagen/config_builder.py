@@ -93,7 +93,7 @@ class ConfigBuilder:
             logger.debug(f'adding collection {collection_name} with {len(collection_values)} values.')
 
             collection_obj = {
-                'pattern': collection_name, 'values': collection_values, 'samples': 10, 'distribution': {'type': 'normal', 'config': None}
+                'pattern': collection_name, 'values': collection_values, 'priority': 1000, 'samples': 10, 'distribution': {'type': 'normal', 'config': None}
             }
 
             config['data_types']['collections'][collection_name] = collection_obj
@@ -101,7 +101,16 @@ class ConfigBuilder:
     def __look_for_suitable_type(self, field_name: str, field_type: str, type_configs: Dict[str, str]
                                  ) -> Optional[str]:
 
-        for type_, type_config in type_configs.items():
+        # sort by priority (bigger value = more priority)
+
+        def _fetch_priority(t):
+            return t[1].get('priority') if t[1].get('priority') is not None else 0
+
+        type_configs = sorted(type_configs.items(), key=_fetch_priority, reverse=True)
+
+        # find type
+
+        for type_, type_config in type_configs:
 
             pattern = type_config.get('pattern')
             compiled_pattern = re.compile(pattern)
@@ -208,6 +217,13 @@ class ConfigBuilder:
         if num_samples is None:
             logger.warning('No samples specified.')
 
+        # check priority
+
+        priority = type_config.get('priority')
+
+        if priority is None:
+            logger.warning('No priority specified.')
+
     def __check_generable_type_consistency(self, type_config: Dict[str, Any], samples_optional: bool = False
                                            ) -> None:
 
@@ -243,6 +259,13 @@ class ConfigBuilder:
 
         if num_samples is None:
             logger.warning('No samples specified.')
+
+        # check priority
+
+        priority = type_config.get('priority')
+
+        if priority is None:
+            logger.warning('No priority specified.')
 
     def __check_field_consistency(self, field_name: str, field_configuration: Dict[str, Any], collection_types_config: Dict[str, Dict[str, Any]], generable_types_config: Dict[str, Dict[str, Any]]) -> None:
 
@@ -469,11 +492,25 @@ class ConfigBuilder:
 
     def __build_field_config(self, field_type: str, field_name: str, current_field_config: Dict[str, Any], base_types_config: Dict[str, Any], collection_types_config: Dict[str, Any], generable_types_config: Dict[str, Any]) -> Dict[str, str]:
 
+        # fetch user type configuration
+
+        field_config_type = current_field_config.get('type') if current_field_config is not None else None
+
+        # look for suitable tyupes
+
+        matching_type = self.__look_for_suitable_type(
+            field_name=field_name, field_type=field_type, type_configs={**collection_types_config, **generable_types_config}
+        )
+
+        # select type with the three posibilities
+
+        field_type = field_config_type if field_config_type is not None else (matching_type if matching_type is not None else field_type)
+
         # generate different following the type
 
         if DataType.is_base_type(DataType.from_str(field_type)):
 
-            logger.debug(f'set field {field_name} as base type')
+            logger.debug(f'set field {field_name} (type {field_type}) as base type')
 
             # get global config for type
             current_type_config = base_types_config.get(field_type)
@@ -485,7 +522,7 @@ class ConfigBuilder:
 
         elif field_type in collection_types_config or (current_field_config is not None and 'values' in current_field_config):
 
-            logger.debug('set field as collection')
+            logger.debug(f'set field {field_name} (type {field_type}) as collection')
 
             current_type_config = collection_types_config.get(field_type)
 
@@ -496,7 +533,7 @@ class ConfigBuilder:
 
         elif field_type in generable_types_config or (current_field_config is not None and 'generator' in current_field_config):
 
-            logger.debug('set field as generable')
+            logger.debug(f'set field {field_name} (type {field_type}) as generable')
 
             current_type_config = generable_types_config.get(field_type)
 
@@ -507,7 +544,7 @@ class ConfigBuilder:
 
         else:
 
-            logger.debug('set field as unknown. Looking for matching collections and generables.')
+            logger.debug(f'set field {field_name} (type {field_type}) as unknown. Looking for matching collections and generables.')
 
             matching_collection = self.__look_for_suitable_type(
                 field_name=field_name, field_type=field_type, type_configs=collection_types_config
@@ -515,7 +552,7 @@ class ConfigBuilder:
 
             if matching_collection is not None:
 
-                logger.debug(f'find suitable collection matching the name of field {field_name}: {matching_collection}')
+                logger.debug(f'set field {field_name} (type {field_type}) as collection (matching collection {matching_collection})')
 
                 current_type_config = collection_types_config.get(matching_collection)
 
@@ -531,7 +568,7 @@ class ConfigBuilder:
 
                 if matching_generable is not None:
 
-                    logger.debug(f'find suitable generable matching the name of field {field_name}: {matching_generable}')
+                    logger.debug(f'set field {field_name} (type {field_type}) as generable (matching generable {matching_collection})')
 
                     current_type_config = generable_types_config.get(matching_generable)
 
@@ -580,7 +617,7 @@ class ConfigBuilder:
                 field_name = field.name
                 field_type = field.type
 
-                logger.debug(f'processing field {table_name}.{field_name}')
+                # logger.debug(f'processing field {table_name}.{field_name}')
 
                 # format type
                 field_type = field_type.name if not isinstance(field_type, str) else field_type

@@ -61,8 +61,9 @@ class SQLDataFormatter(DataFormatter):
         # fetch data and fetch fields and format it into entries
         data = directive.fetch()
         table_name = directive.name
+        num_entries = len(data[list(data.keys())[0]])
         fields = list(data.keys())
-        data_entries = [[data[k][index] for k in fields] for index in range(directive.num_samples)]
+        data_entries = [[data[k][index] for k in fields] for index in range(num_entries)]
 
         # format data
         def _format_numer(data):

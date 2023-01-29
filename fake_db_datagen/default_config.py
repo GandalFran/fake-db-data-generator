@@ -84,7 +84,7 @@ def serve_default_config():
                     "distribution": {
                         "type": "normal",
                         "config": None
-                    }
+                    }, "priority": -2
                 },
                 "surname": {
                     "pattern": "((.*)?apellido(.*)?)|((.*)?surname(.*)?)",
@@ -114,7 +114,7 @@ def serve_default_config():
                     "distribution": {
                         "type": "normal",
                         "config": None
-                    }
+                    }, "priority": -1
                 },
                 "addres": {
                     "pattern": "((.*)?addres(.*)?)|((.*)?direction(.*)?)|((.*)?location(.*)?)|((.*)?ubication(.*)?)|((.*)?dirección(.*)?)|((.*)?direccion(.*)?)|((.*)?localización(.*)?)|((.*)?ubicación(.*)?)|((.*)?localizacion(.*)?)|((.*)?ubicacion(.*)?)",
@@ -127,7 +127,7 @@ def serve_default_config():
                     "distribution": {
                         "type": "normal",
                         "config": None
-                    }
+                    }, "priority": -1
                 },
                 "sex": {
                     "pattern": "((.*)?sex(.*)?)|((.*)?gender(.*)?)|((.*)?género(.*)?)",
@@ -140,7 +140,7 @@ def serve_default_config():
                     "distribution": {
                         "type": "normal",
                         "config": None
-                    }
+                    }, "priority": -1
                 },
                 "text": {
                     "pattern": "((.*)?text(.*)?)",
@@ -155,49 +155,49 @@ def serve_default_config():
                     "distribution": {
                         "type": "normal",
                         "config": None
-                    }
+                    }, "priority": -3
                 }
             },
             "generables": {
                 "id": {
                     "pattern": "((.*)?id(.*)?)",
                     "samples": 10,
-                    "generator": "[0-9]{1-10}"
+                    "generator": "[0-9]{10}", "priority": -2
                 },
                 "uuid": {
                     "pattern": "((.*)?uuid(.*)?)|((.*)?uid(.*)?)",
                     "samples": 10,
-                    "generator": "[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}"
+                    "generator": "[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}", "priority": -3
                 },
                 "phone": {
                     "pattern": "((.*)?phone(.*)?)|((.*)?movil(.*)?)|((.*)?móvil(.*)?)|((.*)?telefono(.*)?)|((.*)?teléfono(.*)?)",
                     "samples": 10,
-                    "generator": "[\\+]?[(]?[0-9]{3}[)]?[-\\s\\.]?[0-9]{3}[-\\s\\.]?[0-9]{4,6}"
+                    "generator": r"(\(\+[0-9]{1,2}\) )?[0-9]{9}", "priority": -1
                 },
                 "email": {
                     "pattern": "((.*)?email(.*)?)|((.*)?mail(.*)?)|((.*)?correo(.*)?)",
                     "samples": 10,
-                    "generator": "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}."
+                    "generator": r"[A-Za-z0-9]+@domain\.net", "priority": -1
                 },
                 "ip": {
                     "pattern": "(.*)?ip(.*)?",
                     "samples": 10,
-                    "generator": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+                    "generator": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)", "priority": -1
                 },
                 "dni": {
                     "pattern": "(.*)?dni(.*)?",
                     "samples": 10,
-                    "generator": "[0-9]{7}[A-Z]{1}"
+                    "generator": "[0-9]{7}[A-Z]{1}", "priority": -1
                 },
                 "varchar": {
                     "pattern": "varchar",
                     "samples": 10,
-                    "generator": "[a-zA-Z]{1-255}"
+                    "generator": "[a-zA-Z]{5}", "priority": -2
                 },
                 "char": {
                     "pattern": "char",
                     "samples": 10,
-                    "generator": "[a-zA-Z]{1}"
+                    "generator": "[a-zA-Z]{1}", "priority": -3
                 }
             }
         }
