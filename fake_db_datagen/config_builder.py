@@ -453,8 +453,8 @@ class ConfigBuilder:
                                     ) -> Dict[str, Any]:
 
         # get generable
-        field_generable = current_field_config.get('generable') if current_field_config is not None else None
-        field_generable = current_type_config.get('generable') if field_generable is None else field_generable
+        field_generable = current_field_config.get('generator') if current_field_config is not None else None
+        field_generable = current_type_config.get('generator') if field_generable is None else field_generable
 
         # get num_samples
         field_samples = current_field_config.get('samples') if current_field_config is not None else None
@@ -462,7 +462,7 @@ class ConfigBuilder:
 
         # set values to configuration
         field_config = {
-            'type': DataType.generable, 'generable': field_generable, 'samples': field_samples, 'distribution': None
+            'type': DataType.generable, 'generator': field_generable, 'samples': field_samples, 'distribution': None
         }
 
         return field_config

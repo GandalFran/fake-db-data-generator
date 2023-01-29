@@ -19,7 +19,8 @@ class DistributionType(enum.Enum):
     def from_str(cls, str_: str
                  ) -> 'DistributionType':
 
-        str_ = str_.lower()
+        if str_ is not None:
+            str_ = str_.lower()
 
         return None if str_ not in [e.value for e in cls] else cls[str_]
 
@@ -43,10 +44,19 @@ class DistributionGenerator:
             generator = LogDistributionGenerator(
                 config=config
             )
+        elif distribution_type is None:
+            generator = cls.default()
         else:
             raise ValueError(f'Unable to instance distribution generator. The distribution type {distribution_type} has not an implemented instanciation.')
 
         return generator
+
+    @classmethod
+    def default(cls) -> 'DistributionGenerator':
+
+        default_generator = NormalDistributionGenerator(config=None)
+
+        return default_generator
 
     def scale(self, origin_values: List[float], dest_start: float, dest_end: List[float]
               ) -> float:
@@ -67,12 +77,10 @@ class DistributionGenerator:
         raise Exception('This method must not be used in this class, first build a DistributionGenerator with the DistributionGenerator.build method.')
 
 
-class NormalDistributionGenerator:
+class NormalDistributionGenerator(DistributionGenerator):
 
-    def __init__(self,
-                 config: Dict[str, Any]
-                 ) -> Any:
-        super.__init__(config=config)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
     def generate(self, min_value: float, max_value: float, num_samples: int
                  ) -> List[float]:
@@ -88,12 +96,10 @@ class NormalDistributionGenerator:
         return scaled_values
 
 
-class LogDistributionGenerator:
+class LogDistributionGenerator(DistributionGenerator):
 
-    def __init__(self,
-                 config: Dict[str, Any]
-                 ) -> Any:
-        super.__init__(config=config)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
     def generate(self, min_value: float, max_value: float, num_samples: int
                  ) -> List[float]:

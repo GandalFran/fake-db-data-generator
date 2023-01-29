@@ -30,7 +30,7 @@ class DataFormatter:
 
         raise ValueError('This method must not be used directly')
 
-    def joined_directives(self, formatted_directives: List[str]) -> str:
+    def join_directives(self, formatted_directives: List[str]) -> str:
 
         joined_directives = '\n\n'.join(formatted_directives)
 
@@ -61,8 +61,8 @@ class SQLDataFormatter(DataFormatter):
         # fetch data and fetch fields and format it into entries
         data = directive.fetch()
         table_name = directive.name
-        fields = list(data.fields.keys())
-        data_entries = [[data[k][index] for k in fields] for index in directive.num_samples]
+        fields = list(data.keys())
+        data_entries = [[data[k][index] for k in fields] for index in range(directive.num_samples)]
 
         # format data
         def _format_numer(data):

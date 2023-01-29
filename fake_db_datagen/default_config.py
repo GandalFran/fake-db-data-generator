@@ -12,8 +12,8 @@ def serve_default_config():
             "base_types": {
                 "datetime": {
                     "value": {
-                        "start": "2020-01-01T10:00:00.000Z",
-                        "end": "2023-01-01T10:00:00.000Z"
+                        "start": "2020-01-01T10:00:00",
+                        "end": "2023-01-01T10:00:00"
                     },
                     "samples": 10,
                     "distribution": {
@@ -33,6 +33,17 @@ def serve_default_config():
                     }
                 },
                 "int": {
+                    "value": {
+                        "start": 0,
+                        "end": 10
+                    },
+                    "samples": 10,
+                    "distribution": {
+                        "type": "normal",
+                        "config": None
+                    }
+                },
+                "boolean": {
                     "value": {
                         "start": 0,
                         "end": 10

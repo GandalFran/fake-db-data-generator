@@ -5,8 +5,8 @@
 
 
 import enum
-from datetime import datetime
 from typing import Any, List
+from datetime import datetime, timedelta
 
 import numpy as np
 import rstr
@@ -20,7 +20,7 @@ class DataType(enum.Enum):
 
     int_ = 'int'
     float_ = 'float'
-    boolean_ = 'bool'
+    boolean_ = 'boolean'
     datetime_ = 'datetime'
 
     text_ = 'text'
@@ -67,7 +67,7 @@ class GeneratorType(enum.Enum):
         """
 
         obj = {
-            DataType.int_: cls.base_type, DataType.float_: cls.base_type, DataType.boolean_: cls.base_type, DataType.datetime_: cls.base_type, DataType.text_: cls.collection, DataType.collection: cls.collection, DataType.char_: cls.generable, DataType.varchar_: cls.generable, DataType.uuid_: cls.generable, DataType.id_: cls.generable
+            DataType.int_: cls.base_type, DataType.float_: cls.base_type, DataType.boolean_: cls.base_type, DataType.datetime_: cls.base_type, DataType.text_: cls.collection, DataType.collection: cls.collection, DataType.char_: cls.generable, DataType.varchar_: cls.generable, DataType.uuid_: cls.generable, DataType.id_: cls.generable, DataType.generable: cls.generable
         }
 
         if data_type not in obj:
@@ -105,12 +105,12 @@ class DataTypeGenerator:
                 data_type=data_type, start=start, end=end, distribution_generator=distribution_generator
             )
         elif assigned_generator == GeneratorType.collection:
-            generator = GenerableDataTypeGenerator(
-                collection=collection_values, distribution_generator=distribution_generator
+            generator = CollectionDataTypeGenerator(
+                collection_values=collection_values, distribution_generator=distribution_generator
             )
         elif assigned_generator == GeneratorType.generable:
-            generator = CollectionDataTypeGenerator(
-                expression=generable_expression, distribution_generator=distribution_generator
+            generator = GenerableDataTypeGenerator(
+                generable_expression=generable_expression, distribution_generator=distribution_generator
             )
         else:
             raise ValueError(f'Unable to instance data generator. The assigned_generator {assigned_generator} has not an implemented instanciation.')
@@ -128,7 +128,7 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
 
     def __init__(self, data_type: DataType, start: Any, end: Any, *args, **kwargs
                  ) -> None:
-        super.__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.end = end
         self.start = start
         self.data_type = data_type
@@ -184,12 +184,12 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
     def _generate_datetimes(self, num_samples: int) -> List[datetime]:
 
         # load configuration
-        end_datetime = datetime.fromiso(self.end)
-        start_datetime = datetime.fromiso(self.start)
+        end_datetime = datetime.fromisoformat(self.end)
+        start_datetime = datetime.fromisoformat(self.start)
 
         # calculate in seconds the difference
         dates_substraction = (end_datetime - start_datetime)
-        num_seconds = (dates_substraction.days * 24 * 3600) + (dates_substraction.hours * 3600) + dates_substraction.seconds
+        num_seconds = dates_substraction.total_seconds()
 
         # build distribution values
         values = self.distribution_generator.generate(
@@ -197,7 +197,7 @@ class BaseTypeDataTypeGenerator(DataTypeGenerator):
 
         # build values
         fixed_values = [int(value) for value in values]
-        delta_values = [datetime.timedelta(seconds=fixed_value) for fixed_value in fixed_values]
+        delta_values = [timedelta(seconds=fixed_value) for fixed_value in fixed_values]
         date_values = [(start_datetime + delta_value) for delta_value in delta_values]
 
         return date_values
@@ -232,7 +232,7 @@ class CollectionDataTypeGenerator(DataTypeGenerator):
 
     def __init__(self, collection_values: List[Any], *args, **kwargs
                  ) -> None:
-        super.__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.collection_values = collection_values
 
     def generate(self, num_samples: int
@@ -257,13 +257,13 @@ class GenerableDataTypeGenerator(DataTypeGenerator):
 
     def __init__(self, generable_expression: str, *args, **kwargs
                  ) -> None:
-        super.__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.generable_expression = generable_expression
 
     def generate(self, num_samples: int
                  ) -> List[Any]:
 
         # build values
-        generable_values = [rstr.xeger(self.generable_expression) for _ in num_samples]
+        generable_values = [rstr.xeger(self.generable_expression) for _ in range(num_samples)]
 
         return generable_values

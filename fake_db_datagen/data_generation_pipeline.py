@@ -63,6 +63,8 @@ class DataGenerationPiepline:
             directives=directives
         )
 
+        logger.info('completed generation')
+
         return formatted_generated_data
 
 
@@ -121,6 +123,6 @@ class DataGenerationPipelineFromFiles(DataGenerationPiepline):
                 file_path=default_config_file_path
             )
 
-        super().generate(
+        return super().generate(
             dbml=dbml, user_config=user_config, default_config=default_config, formatter_type=formatter_type
         )

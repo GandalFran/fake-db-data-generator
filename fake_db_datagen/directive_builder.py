@@ -10,12 +10,17 @@ from pydbml import PyDBML
 
 from . import logger
 from .data_types_generator import DataTypeGenerator
+from .distribution import DistributionGenerator, DistributionType
 
 
 class GeneratorDirectiveDependency:
 
     def __init__(self, referenced_field: str, referenced_directive: 'GeneratorDirective'
                  ) -> None:
+
+        if referenced_field is None or referenced_directive is None:
+            raise Exception('TODO: eliminar. Mala construccion de depenencias')
+
         self.referenced_field = referenced_field
         self.referenced_directive = referenced_directive
 
@@ -28,9 +33,9 @@ class GeneratorDirective:
         self.name = name
         self.fields = fields
         self.num_samples = num_samples
-        self.dependencies = dependencies
+        self.dependencies = dependencies if dependencies is not None else {}
 
-        self._generated_data = {}
+        self._generated_data = None
 
     def __generate_dependencies_entries(self) -> List[Dict[str, Any]]:
 
@@ -45,11 +50,12 @@ class GeneratorDirective:
 
             # fetch basic dependency information
 
+            dependency_field = dependency.referenced_field
             dependency_directive = dependency.referenced_directive
 
-            logger.debug(f'retrieving samples from {dependency_directive.name}.{dependency.referenced_field} for field {self.name}.{field_name}')
+            logger.debug(f'retrieving samples from {dependency_directive.name}.{dependency_field} for field {self.name}.{field_name}')
 
-            dependency_values = dependency.directive.fetch(field=dependency.referenced_field)
+            dependency_values = dependency_directive.fetch_field(field=dependency_field)
 
             # calculate new dependency_entries
 
@@ -116,9 +122,9 @@ class GeneratorDirective:
 
         return entries
 
-    def _generate(self) -> List[Dict[str, Any]]:
+    def generate(self) -> List[Dict[str, Any]]:
 
-        logger.debug(f'generating data for entity {self.name}')
+        logger.debug(f'generating data for directive {self.name}')
 
         if self.dependencies:
 
@@ -164,16 +170,16 @@ class GeneratorDirective:
     def fetch(self) -> Dict[str, List[Any]]:
 
         if self._generated_data is None:
-            self._generate()
+            self.generate()
 
         return self._generated_data
 
     def fetch_field(self, field: str) -> List[Any]:
 
-        if field in self.fields:
-            raise ValueError(f'The requested field "{field}"" is not available in the structure "{self.name}". Only there is available "{", ".join([f for f in self.fields.keys()])}".')
+        if field not in self.fields and field not in self.dependencies:
+            raise ValueError(f'The requested field "{field}" is not available in the directive "{self.name}". Only there is available "{", ".join([f for f in self.fields.keys()])}" and "{", ".join([f for f in self.dependencies.keys()])}".')
 
-        return self.fetch_generated().get(field)
+        return self.fetch().get(field)
 
     def reset(self) -> None:
         logger.debug(f'reset data from {self.table}')
@@ -228,10 +234,10 @@ class DirectiveBuilder:
                 referencing_columns = [c.name for c in referencing_columns]
 
                 # get referenced_colum
-                referenced_column = referencing_columns[0]
+                referenced_column = referenced_columns[0]
 
-                if len(referencing_columns) > 0:
-                    raise Exception('Multiple referencing columns. Generation error')
+                if len(referencing_columns) > 1:
+                    raise Exception(f'Generation Error: There is more than one column beign referenced by {referencing_table}.{referenced_column}. Concretelly {len(referencing_columns)} columns: {referencing_columns}.')
 
                 # register references
 
@@ -248,7 +254,7 @@ class DirectiveBuilder:
 
         for referencing_table, table_references in dependencies.items():
 
-            for referencing_column, table_reference in table_references:
+            for referencing_column, table_reference in table_references.items():
 
                 referenced_table = table_reference.get('table')
                 referenced_column = table_reference.get('column')
@@ -296,10 +302,30 @@ class DirectiveBuilder:
 
             # if there is no dependency, then build generator for field
 
-            logger.debug(f'building data generator for field {table}.{field} WARNING ESTO ESTA MAL SEGURO')
+            logger.debug(f'building data generator for field {table}.{field}')
 
-            data_generator = DataTypeGenerator.from_type(
-                data_type=field_configuration.get('type'), start=field_configuration.get('start'), end=field_configuration.get('end'), generable_expression=field_configuration.get('generable_expression'), collection_values=field_configuration.get('collection_values'), distribution_generator=field_configuration.get('distribution_generator')
+            value = field_configuration.get('value')
+            data_type = field_configuration.get('type')
+            num_samples = field_configuration.get('samples')
+            collection_values = field_configuration.get('values')
+            generable_expression = field_configuration.get('generator')
+            distribution_info = field_configuration.get('distribution')
+
+            end = value.get('end') if value is not None else None
+            start = value.get('start') if value is not None else None
+            distribution_type = distribution_info.get('start') if distribution_info is not None else None
+            distribution_config = distribution_info.get('start') if distribution_info is not None else None
+            distribution_type = DistributionType.from_str(distribution_type)
+
+            # instance distribution generator
+            distribution_generator = DistributionGenerator.build(
+                distribution_type=distribution_type, config=distribution_config
+            )
+
+            # instance data generator
+
+            data_generator = DataTypeGenerator.build(
+                data_type=data_type, start=start, end=end, generable_expression=generable_expression, collection_values=collection_values, distribution_generator=distribution_generator
             )
 
             # add generator to generator_list
@@ -310,10 +336,8 @@ class DirectiveBuilder:
         logger.debug(f'building generation directive for {table}')
 
         directive = GeneratorDirective(
-            index=None, name=table, num_samples=None, fields=fields, dependencies=None
+            index=None, name=table, num_samples=num_samples, fields=fields, dependencies=None
         )
-
-        logger.warning('TODO: hay que meter el num_samples dentro de la configuracion de cada campo')
 
         return directive
 
@@ -328,8 +352,8 @@ class DirectiveBuilder:
 
             logger.debug(f'building dependency directive for field {table}.{field}')
 
-            referenced_field = dependency.get('field')
             referenced_table = dependency.get('table')
+            referenced_field = dependency.get('column')
             referenced_directive = directives.get(referenced_table)
 
             dependency_directive = GeneratorDirectiveDependency(
@@ -373,17 +397,21 @@ class DirectiveBuilder:
 
         for table in tables_config:
 
-            logger.debug(f'populating directives\' dependencies for table {table}')
-
-            # fetch dependencies and initialize values
-
             table_dependencices = dependencies.get(table)
 
-            # update table's directive with dependencies
+            if table_dependencices is not None:
 
-            self.__build_dependencies_for_table_directive(
-                table=table, directives=directives, table_dependencices=table_dependencices
-            )
+                # update table's directive with dependencies
+
+                logger.debug(f'populating directives\' dependencies for table {table}')
+
+                self.__build_dependencies_for_table_directive(
+                    table=table, directives=directives, table_dependencices=table_dependencices
+                )
+
+            else:
+
+                logger.debug(f'no dependencies found for table {table}: skipping populating directives\' dependencies process')
 
         # retrieve directives objects from dictionary
 
@@ -398,14 +426,16 @@ class DirectiveBuilder:
 
         references = {}
 
-        for referencing_table, dependency in dependencies:
+        for referencing_table, referencing_table_columns in dependencies.items():
 
-            referenced_table = dependency.get('table')
+            for referencing_table_column, referencing_table_column_dependencies in referencing_table_columns.items():
 
-            if referenced_table not in references:
-                references[referenced_table] = []
+                referenced_table = referencing_table_column_dependencies.get('table')
 
-            references[referenced_table].append(referencing_table)
+                if referenced_table not in references:
+                    references[referenced_table] = []
+
+                references[referenced_table].append(referencing_table)
 
         # calculate all tables names
 
@@ -458,7 +488,7 @@ class DirectiveBuilder:
         # create directives mixing the populate and the dependencies (to avoid multiple data generation)
         logger.debug('instancing building directives')
         directives = self._build_directives(
-            config=config, dependencies=dependencies
+            tables_config=config, dependencies=dependencies
         )
 
         # order the tables in a inorder iteration (tree iteration) to generate first the tables with no dependencies
@@ -466,3 +496,8 @@ class DirectiveBuilder:
         self._calculate_sequence(
             directives=directives, dependencies=dependencies
         )
+
+        import pprint
+        pprint.pprint(dependencies)
+
+        return directives
