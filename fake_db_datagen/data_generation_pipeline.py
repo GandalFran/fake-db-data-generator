@@ -23,6 +23,8 @@ class DataGenerationPiepline:
 
     def generate(self, dbml: str, user_config: Dict[str, Any], default_config: Dict[str, Any] = None, formatter_type: FormatterType = FormatterType.sql) -> str:
 
+        logger.info('started generation')
+
         # get formatter type
         formatter_type = FormatterType.from_str(formatter_type)
         if formatter_type is None:
@@ -54,7 +56,7 @@ class DataGenerationPiepline:
             dbml=dbml, config=config
         )
 
-        logger.info(f'generating data. There is a total of {len(directives)} directives')
+        logger.info(f'generating data for {len(directives)} directives')
         for directive in directives:
             directive.generate()
 

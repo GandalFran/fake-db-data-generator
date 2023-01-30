@@ -147,7 +147,7 @@ class ConfigBuilder:
         distribution = type_config.get('distribution')
 
         if distribution is None:
-            logger.warning('No distribution specified.')
+            logger.debug('No distribution specified.')
         else:
 
             distribution_type = distribution.get('type')
@@ -174,7 +174,7 @@ class ConfigBuilder:
         num_samples = type_config.get('samples')
 
         if num_samples is None:
-            logger.warning('No samples specified.')
+            logger.debug('No samples specified.')
 
     def __check_collection_type_consistency(self, type_config: Dict[str, Any], samples_optional: bool = False
                                             ) -> None:
@@ -201,7 +201,7 @@ class ConfigBuilder:
         distribution = type_config.get('distribution')
 
         if distribution is None:
-            logger.warning('No distribution specified.')
+            logger.debug('No distribution specified.')
         else:
 
             distribution_type = distribution.get('type')
@@ -215,14 +215,14 @@ class ConfigBuilder:
         num_samples = type_config.get('samples')
 
         if num_samples is None:
-            logger.warning('No samples specified.')
+            logger.debug('No samples specified.')
 
         # check priority
 
         priority = type_config.get('priority')
 
         if priority is None:
-            logger.warning('No priority specified.')
+            logger.debug('No priority specified.')
 
     def __check_generable_type_consistency(self, type_config: Dict[str, Any], samples_optional: bool = False
                                            ) -> None:
@@ -258,14 +258,14 @@ class ConfigBuilder:
         num_samples = type_config.get('samples')
 
         if num_samples is None:
-            logger.warning('No samples specified.')
+            logger.debug('No samples specified.')
 
         # check priority
 
         priority = type_config.get('priority')
 
         if priority is None:
-            logger.warning('No priority specified.')
+            logger.debug('No priority specified.')
 
     def __check_field_consistency(self, field_name: str, field_configuration: Dict[str, Any], collection_types_config: Dict[str, Dict[str, Any]], generable_types_config: Dict[str, Dict[str, Any]]) -> None:
 

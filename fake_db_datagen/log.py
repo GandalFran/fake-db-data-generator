@@ -18,18 +18,14 @@ LOGGING_CONFIG = {
             'handlers': ['consoleHandler']
         },
         LOGGER_NAME: {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
-            'handlers': ['consoleHandler', 'fileHandler']
+            'handlers': ['consoleHandler']
         }
     },
     'formatters': {
         'consoleFormatter': {
-            'format': '[%(asctime)s][%(levelname)s][%(module)s][%(funcName)s] %(message)s'
-        },
-        'fileFormatter': {
-            'format':
-            f'[%(asctime)s][%(levelname)s][{LOGGER_NAME}.%(module)s.%(filename)s:%(funcName)s:%(lineno)d] %(message)s'
+            'format': '[%(asctime)s][%(levelname)s][%(module)s] %(message)s'
         }
     },
     'handlers': {
@@ -37,12 +33,6 @@ LOGGING_CONFIG = {
             'level': 'DEBUG',
             'formatter': 'consoleFormatter',
             'class': 'logging.StreamHandler'
-        },
-        'fileHandler': {
-            'level': 'WARNING',
-            'formatter': 'fileFormatter',
-            'class': 'logging.FileHandler',
-            'filename': f'/var/log/{LOGGER_NAME}.errors.log'
         }
     }
 }

@@ -1,15 +1,6 @@
 {
     "schema":{
         "pacientes":{
-            "nombre": {
-                "type": "name"
-            },
-            "apellido1":{
-                "type":"surname"
-            },
-            "apellido2":{
-                "type":"surname"
-            },
             "municipio":{
                 "type":"municipios"
             },

@@ -124,7 +124,7 @@ class GeneratorDirective:
 
     def generate(self) -> List[Dict[str, Any]]:
 
-        logger.debug(f'generating data for directive {self.name}')
+        logger.info(f'generating data for directive {self.name}')
 
         if self.dependencies:
 
@@ -482,18 +482,21 @@ class DirectiveBuilder:
               ) -> List[GeneratorDirective]:
 
         # create directives mixing the populate and the dependencies (to avoid multiple data generation)
+
         logger.debug('calculating dependencies')
         dependencies = self._calculate_dependencies(
             dbml=dbml
         )
 
         # create directives mixing the populate and the dependencies (to avoid multiple data generation)
+
         logger.debug('instancing building directives')
         directives = self._build_directives(
             tables_config=config, dependencies=dependencies
         )
 
         # order the tables in a inorder iteration (tree iteration) to generate first the tables with no dependencies
+
         logger.debug('calculating table sequency')
         self._calculate_sequence(
             directives=directives, dependencies=dependencies
@@ -502,8 +505,5 @@ class DirectiveBuilder:
         # sorty by table sequency
 
         dependencies = list(sorted(directives, key=lambda x: x.index))
-
-        import pprint
-        pprint.pprint(dependencies)
 
         return directives
