@@ -1,6 +1,6 @@
 # Fake DB data generation
 
-Fake data generation tool with DBML.
+Generates fake data from DBML model. It can generate a SQL script.
 
 ## Usage
 1. Install package with `python -m pip install . --upgrade`.
